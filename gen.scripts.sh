@@ -101,3 +101,4 @@ chmod +x display.awk
 
 ./script.awk | ./get.conf.awk | ./display.awk
 
+rm -f script.awk get.conf.awk display.awk 2>/dev/null
