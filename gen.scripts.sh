@@ -1,30 +1,55 @@
 #!/bin/bash
 
 function usage {
+	declare -r RED=$(tput setaf 1)
+	declare -r NORMAL=$(tput sgr0)
+	if ! [ -z "$1" ]; then
+		echo -e "${RED}[E]${NORMAL}: $1"
+	fi
 cat << EOF
 Syntax: $(basename $0) TIME_HHMM < XSALGOS_FILE
 
-e.g.: $(basename $0) 1905 < xsalgos.04-05
+e.g.: $(basename $0) 1905 < xslgs.04-05
 EOF
 	exit 1
 }
-[ $# -eq 0 ] && usage
-[[ ! $1 =~ [012][0-9][0-5][0-9] ]] && usage
+[ $# -eq 0 ] && usage "no parameter detected"
+[ ! -w ./ ] && usage "unable to write in the current directory"
 
-CSECT="[MQZXNGAIJVKW][NDSHIU]"
-MSECT="R${CSECT}"
-SECT="R?${CSECT}"
-HOUR="[012][0-9][0-5][0-9]"
-POSI="P[NESF][0-9]"
-LIST="(${SECT} +)+"
-CLIST="(${CSECT} +)+"
-HEAD="${POSI} += (FERMEE|${LIST})"
-TIME=$1
+TIME_REGEX="([01][0-9]|20|21|22|23)[0-5][0-9]"
+POSI_REGEX="P[NESF][0-9]"
+
+CSECT_REGEX="[MQZXNGAIJVKW][NDSHIU]" # civil sector
+MSECT_REGEX="R${CSECT_REGEX}" # military sector
+GSECT_REGEX="R?${CSECT_REGEX}" # generic sector
+
+CLIST_REGEX="(${CSECT_REGEX} +)+"
+GLIST_REGEX="(${GSECT_REGEX} +)+"
+
+DEFCF_REGEX="${POSI_REGEX} += (FERMEE|${GLIST_REGEX})"
+
+while (($# > 0)); do
+	case "$1" in
+	-h|--help)
+		usage
+		;;
+	*)
+		[[ ! $1 =~ ${TIME_REGEX} ]] && usage "TIME $1 invalid"
+		TIME=$1
+		;;
+
+	esac
+	shift
+done
+
+if [ -z TIME ]; then
+	usage "TIME_HHMM not found"
+fi
 
 echo "#!/usr/bin/awk -f
 function display(h,l) {
 	# delete military sectors
-	gsub(/${MSECT}/, \"\", l)
+	gsub(/${MSECT_REGEX}/, \"\", l)
 	# delete extra spaces
 	gsub(/ +/, \" \", l)
 	gsub(/^ +/,\"\", l)
@@ -32,7 +57,7 @@ function display(h,l) {
 		print h, l
 }
 
-/^0\*\*\* ${HOUR} STPV-Loc OPP ${HEAD}\$/ {
+/^0\*\*\* ${TIME_REGEX} STPV-Loc OPP ${DEFCF_REGEX}\$/ {
 	display(HOUR,LINE)
 	HOUR=\$2
 	LINE=\"\"
@@ -42,11 +67,11 @@ function display(h,l) {
 	LINE=\$0
 }
 
-/^ +${LIST}\$/ {
+/^ +${GLIST_REGEX}\$/ {
 	LINE=LINE\$0
 }
 
-/^ +${HEAD}\$/ {
+/^ +${DEFCF_REGEX}\$/ {
 	display(HOUR,LINE)
 	LINE=\"\"
 	if (\$3 == \"FERMEE\")
@@ -62,7 +87,7 @@ chmod +x script.awk
 echo "#!/usr/bin/awk -f
 
 # military sectors already left out...
-/^${HOUR} ${POSI} = ${CLIST}\$/ {
+/^${TIME_REGEX} ${POSI_REGEX} = ${CLIST_REGEX}\$/ {
 	if (\$1 > ${TIME})
 		exit 0
 	for(i = 4; i <= NF; i++)
@@ -84,7 +109,7 @@ echo "#!/usr/bin/awk -f
 END {
 	layer=\"NDSHIU\"
 	sect=\"I NGA JVKW MQZX\"
-	printf(\"Statut à %s:\n\", ${TIME}) > \"/dev/stderr\"
+	# printf(\"Statut à %s:\n\", ${TIME}) > \"/dev/stderr\"
 	for(i = 1; i <= length(sect); i++) {
 		if (substr(sect, i, 1) == \" \")
 			print \"\"
@@ -99,6 +124,6 @@ END {
 }" > display.awk
 chmod +x display.awk
 
-./script.awk | ./get.conf.awk | ./display.awk
+./script.awk "$@" | ./get.conf.awk | ./display.awk
 
 rm -f script.awk get.conf.awk display.awk 2>/dev/null
