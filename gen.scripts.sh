@@ -19,7 +19,7 @@ EOF
 TIME_REGEX="([01][0-9]|20|21|22|23)[0-5][0-9]"
 POSI_REGEX="P[NESF][0-9]"
 
-CSECT_REGEX="[MQZXNGAIJVKW][NDSHIU]" # civil sector
+CSECT_REGEX="([MQZXNGA][SIU]|[JVKW][SU]|JH|I[ND])" # civil sector
 MSECT_REGEX="R${CSECT_REGEX}" # military sector
 GSECT_REGEX="R?${CSECT_REGEX}" # generic sector
 
@@ -81,8 +81,8 @@ function display(h,l) {
 
 END {
 	display(HOUR,LINE)
-}" > script.awk
-chmod +x script.awk
+}" > filter.awk
+chmod +x filter.awk
 
 echo "#!/usr/bin/awk -f
 
@@ -98,8 +98,8 @@ END {
 	for(p in db) {
 		printf(\"%s = %s\n\", p, db[p]) | \"sort -k1,1\"
 	}
-}" > get.conf.awk
-chmod +x get.conf.awk
+}" > read.along.awk
+chmod +x read.along.awk
 
 echo "#!/usr/bin/awk -f
 {
@@ -121,9 +121,10 @@ END {
 			}
 		}
 	}
-}" > display.awk
-chmod +x display.awk
+}" > sort.awk
+chmod +x sort.awk
 
-./script.awk "$@" | ./get.conf.awk | ./display.awk
+./filter.awk "$@" | ./read.along.awk | ./sort.awk
 
-rm -f script.awk get.conf.awk display.awk 2>/dev/null
+rm -f filter.awk read.along.awk sort.awk 2>/dev/null
+
