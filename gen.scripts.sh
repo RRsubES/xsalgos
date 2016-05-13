@@ -29,7 +29,7 @@ GLIST_REGEX="(${GSECT_REGEX} +)+"
 DEFCF_REGEX="${POSI_REGEX} += (FERMEE|${GLIST_REGEX})"
 
 #-v TIME: checks if TIME variable has been set
-[[ $1 =~ ${TIME_REGEX} ]] && { TIME=$1; shift; }
+[[ $1 =~ ^${TIME_REGEX}$ ]] && { TIME=$1; shift; }
 # -t 0: check if stdin is connected to a terminal
 # -p 0: check if stdin is connected via a pipe
 # if both fail, it means it was redirected via a "< FILE"
