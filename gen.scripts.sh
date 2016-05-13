@@ -28,23 +28,30 @@ GLIST_REGEX="(${GSECT_REGEX} +)+"
 
 DEFCF_REGEX="${POSI_REGEX} += (FERMEE|${GLIST_REGEX})"
 
+#-v TIME: checks if TIME variable has been set
+[[ $1 =~ ${TIME_REGEX} ]] && { TIME=$1; shift; }
+# -t 0: check if stdin is connected to a terminal
+# -p 0: check if stdin is connected via a pipe
+# if both fail, it means it was redirected via a "< FILE"
+#echo "pipe? $([[ -p 0 ]]; echo $?)"
+#echo "terminal? $([[ -t 0 ]]; echo $?)"
+[[ -v TIME ]] && [[ -p 0 || -t 0 ]] && [[ -f "$1" ]] && { exec < "$1"; shift; }
+
 while (($# > 0)); do
 	case "$1" in
 	-h|--help)
 		usage
 		;;
 	*)
-		[[ ! $1 =~ ${TIME_REGEX} ]] && usage "TIME $1 invalid"
-		TIME=$1
+		usage "$1 is of type unknown"
 		;;
-
 	esac
 	shift
 done
 
-if [ -z TIME ]; then
-	usage "TIME_HHMM not found"
-fi
+#echo "TIME? $([[ -v TIME ]]; echo $?)"
+[[ ! -v TIME ]] && usage "TIME_HHMM not defined"
+[[ -p 0 || -t 0 ]] && usage "No valid detected data to process"
 
 echo "#!/usr/bin/awk -f
 function display(h,l) {
