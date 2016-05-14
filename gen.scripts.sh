@@ -4,9 +4,9 @@ function usage {
 	declare -r RED=$(tput setaf 1)
 	declare -r NORMAL=$(tput sgr0)
 	if ! [ -z "$1" ]; then
-		echo -e "${RED}[E]${NORMAL}: $1"
+		echo -e "${RED}[E]${NORMAL}: $1" > "/dev/stderr"
 	fi
-cat << EOF
+cat << EOF > "/dev/stderr"
 Syntax: $(basename $0) TIME_HHMM < XSALGOS_FILE
 
 e.g.: $(basename $0) 1905 < xslgs.04-05
@@ -29,7 +29,8 @@ GLIST_REGEX="(${GSECT_REGEX} +)+"
 DEFCF_REGEX="${POSI_REGEX} += (FERMEE|${GLIST_REGEX})"
 
 #-v TIME: checks if TIME variable has been set
-[[ $1 =~ ^${TIME_REGEX}$ ]] && { TIME=$1; shift; }
+#FIXME: bc stuff because 0500 can be evaluated otherwise as octal, in awk as well...
+[[ $1 =~ ^${TIME_REGEX}$ ]] && { TIME="$1"; shift; }
 # -t 0: check if stdin is connected to a terminal
 # -p 0: check if stdin is connected via a pipe
 # if both fail, it means it was redirected via a "< FILE"
@@ -88,25 +89,28 @@ function display(h,l) {
 
 END {
 	display(HOUR,LINE)
-}" > filter.awk
-chmod +x filter.awk
+}" > filter.$$.awk
+chmod +x filter.$$.awk
 
 echo "#!/usr/bin/awk -f
 
 # military sectors already left out...
 /^${TIME_REGEX} ${POSI_REGEX} = ${CLIST_REGEX}\$/ {
-	if (\$1 > ${TIME})
+	if (\$1 > $(echo ${TIME} | bc))
 		exit 0
 	for(i = 4; i <= NF; i++)
 		db[\$i]=\$2
 }
 
 END {
-	for(p in db) {
-		printf(\"%s = %s\n\", p, db[p]) | \"sort -k1,1\"
+	layer=\"NDSHIU\"
+	sect=\"I NGA JVKW MQZX\"
+	for(s in db) {
+		#printf(\"%s %d %s = %s\n\", index(sect,substr(s,1,1)), index(layer,substr(s,2,1)), s, db[s])
+		printf(\"%s = %s\n\", s, db[s])
 	}
-}" > read.along.awk
-chmod +x read.along.awk
+}" > read.along.$$.awk
+chmod +x read.along.$$.awk
 
 echo "#!/usr/bin/awk -f
 {
@@ -128,10 +132,11 @@ END {
 			}
 		}
 	}
-}" > sort.awk
-chmod +x sort.awk
+}" > sort.$$.awk
+chmod +x sort.$$.awk
 
-./filter.awk "$@" | ./read.along.awk | ./sort.awk
+./filter.$$.awk "$@" | ./read.along.$$.awk | awk -f concat.awk "PASS=1" uir "PASS=2" /dev/stdin #| sort
+#| ./sort.$$.awk
 
-rm -f filter.awk read.along.awk sort.awk 2>/dev/null
+rm -f filter.$$.awk read.along.$$.awk sort.$$.awk 2>/dev/null
 
