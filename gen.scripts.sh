@@ -139,7 +139,7 @@ END {
 chmod +x sort.$$.awk
 
 if [ -e list.compiled ]; then
-	./filter.$$.awk "$@" | ./read.along.$$.awk | awk -f concat.awk "PASS=1" list.compiled "PASS=2" /dev/stdin
+	./filter.$$.awk "$@" | ./read.along.$$.awk # | awk -f concat.awk "PASS=1" list.compiled "PASS=2" /dev/stdin
 else
 	echo "${RED}[E]${NORMAL} list.compiled not found, unable to shorten expressions" > /dev/stderr
 	./filter.$$.awk "$@" | ./read.along.$$.awk | ./sort.$$.awk
