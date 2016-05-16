@@ -138,10 +138,10 @@ END {
 }" > sort.$$.awk
 chmod +x sort.$$.awk
 
-if [ -e list.compiled ]; then
-	./filter.$$.awk "$@" | ./read.along.$$.awk # | awk -f concat.awk "PASS=1" list.compiled "PASS=2" /dev/stdin
+if [ -e list.rgrp ]; then
+	./filter.$$.awk "$@" | ./read.along.$$.awk | awk -f expand.and.rename.awk "PASS=1" list.rgrp "PASS=2" /dev/stdin | sort
 else
-	echo "${RED}[E]${NORMAL} list.compiled not found, unable to shorten expressions" > /dev/stderr
+	echo "${RED}[E]${NORMAL} list.rgrp not found, unable to shorten expressions" > /dev/stderr
 	./filter.$$.awk "$@" | ./read.along.$$.awk | ./sort.$$.awk
 fi
 

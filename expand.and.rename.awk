@@ -9,12 +9,14 @@ function expand_subgrp(array,idx,	i,j,tmp) {
 	return substr(tmp,2)
 }
 
-function store_sectors(expr,	n,tmp,ary,sub_ary) {
+function store_sectors(expr,	n,tmp,j,ary,m,sub_ary) {
 	# FIXME: check if n!=2, error.
 	n=patsplit(expr, ary, /(\[([A-Z]+)\]|[A-Z])/)
 	tmp=expand_subgrp(ary,1)
 	m=split(tmp,sub_ary)
 	for(j=1; j <= m; j++) {
+		if (sub_ary[j] in Sector)
+			continue
 		Sector[sub_ary[j]]=Sectors_Pow
 		SectId[Sectors_Pow]=sub_ary[j]
 		Sectors_Pow*=2
