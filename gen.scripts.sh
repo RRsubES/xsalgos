@@ -1,18 +1,21 @@
 #!/bin/bash
 
+declare -r RED=$(tput setaf 1)
+declare -r NORMAL=$(tput sgr0)
+
 function usage {
-	declare -r RED=$(tput setaf 1)
-	declare -r NORMAL=$(tput sgr0)
 	if ! [ -z "$1" ]; then
 		echo -e "${RED}[E]${NORMAL}: $1" > "/dev/stderr"
 	fi
 cat << EOF > "/dev/stderr"
 Syntax: $(basename $0) TIME_HHMM < XSALGOS_FILE
+You may use develop.sh to compile the list
 
 e.g.: $(basename $0) 1905 < xslgs.04-05
 EOF
 	exit 1
 }
+
 [ $# -eq 0 ] && usage "no parameter detected"
 [ ! -w ./ ] && usage "unable to write in the current directory"
 
@@ -135,8 +138,12 @@ END {
 }" > sort.$$.awk
 chmod +x sort.$$.awk
 
-./filter.$$.awk "$@" | ./read.along.$$.awk | awk -f concat.awk "PASS=1" uir "PASS=2" /dev/stdin #| sort
-#| ./sort.$$.awk
+if [ -e list.compiled ]; then
+	./filter.$$.awk "$@" | ./read.along.$$.awk | awk -f concat.awk "PASS=1" list.compiled "PASS=2" /dev/stdin
+else
+	echo "${RED}[E]${NORMAL} list.compiled not found, unable to shorten expressions" > /dev/stderr
+	./filter.$$.awk "$@" | ./read.along.$$.awk | ./sort.$$.awk
+fi
 
 rm -f filter.$$.awk read.along.$$.awk sort.$$.awk 2>/dev/null
 
