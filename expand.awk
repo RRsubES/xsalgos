@@ -17,13 +17,13 @@ function store_sectors(expr,	n,tmp,ary,sub_ary) {
 	print ">>>>store_sectors:", expr
 	tmp=""
 	n=patsplit(expr, ary, /(\[([A-Z]+)\]|[A-Z])/)
-	printf("ary[1]: %s ", ary[1])
-	printf("ary[2]: %s ", ary[2])
+	#printf("ary[1]: %s ", ary[1])
+	#printf("ary[2]: %s ", ary[2])
 	tmp=expand_subgrp(ary,1)
-	printf(">>%s\n", tmp)
+	#printf(">>%s\n", tmp)
 	m=split(tmp,sub_ary)
 	for(j=1; j <= m; j++) {
-		printf("%d=[%s] ", sectors_pow, sub_ary[j])
+		#printf("%d=[%s] ", sectors_pow, sub_ary[j])
 		sector[sub_ary[j]]=sectors_pow
 		sectId[sectors_pow]=sub_ary[j]
 		sectors_pow*=2
@@ -34,21 +34,30 @@ function store_sectors(expr,	n,tmp,ary,sub_ary) {
 function store_group(name,expr,		n,ary,i,tmp,m,tary,j) {
 	print ">>>>store_group:", name, expr
 	tmp=""
-	n=patsplit(expr, ary, /(\[([A-Z]+)\]|[A-Z])/)
-	print "ary[1]: ",ary[1]
-	print "ary[2]: ",ary[2]
-	#printf("%s ", ary[i])
-	tmp=expand_subgrp(ary,1)
-	gsub(/^ /, "", tmp)
-	print ">>", name, " = ", tmp
-	m=split(tmp,tary)
-	for(j=1; j <= m; j++)
-		grp[name]=or(grp[name],sector[tary[j]])
-	grpId[grp[name]]=name
+	if (expr in grp) {
+		print "for ", name, ":", expr, "FOUND", grp[expr]
+		grp[name]=or(grp[name],grp[expr])
+	} else {
+		print "for ", name, ":", expr, "NOT FOUND"
+		n=patsplit(expr, ary, /(\[([A-Z]+)\]|[A-Z])/)
+		#print "ary[1]: ",ary[1]
+		#print "ary[2]: ",ary[2]
+		#printf("%s ", ary[i])
+		tmp=expand_subgrp(ary,1)
+		gsub(/^ /, "", tmp)
+		#print ">>", name, " = ", tmp
+		m=split(tmp,tary)
+		for(j=1; j <= m; j++) {
+			grp[name]=or(grp[name],sector[tary[j]])
+		}
+		print "after ", name, grp[name]
+	}
+	#BAD
+	#grpId[grp[name]]=name
 	#printf("\n")
 	#print expand_nr(ary)
 	#return expand_nr(ary)
-	return tmp
+	#return tmp
 }
 
 function enum(bit,		tmp,j) {
@@ -90,9 +99,12 @@ PASS==2 {
 }
 
 END {
+	# need to wait to validate all values of grp
+	for(g in grp)
+		grpId[grp[g]]=g
 	for(p in posId) {
-		if (posId[p] in grp)
-			print p, grp[posId[p]]
+		if (posId[p] in grpId)
+			print p, grpId[posId[p]]
 		else
 			print p, enum(posId[p])
 	}
