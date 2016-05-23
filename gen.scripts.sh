@@ -9,7 +9,7 @@ function usage {
 	fi
 cat << EOF > "/dev/stderr"
 Syntax: $(basename $0) TIME_HHMM < XSALGOS_FILE
-You may use develop.sh to compile the list
+For any new group, amend list.rgrp file.
 
 e.g.: $(basename $0) 1905 < xslgs.04-05
 EOF

@@ -19,6 +19,7 @@ function store_sectors(expr,	n,tmp,j,ary,m,sub_ary) {
 			continue
 		Sector[sub_ary[j]]=Sectors_Pow
 		SectId[Sectors_Pow]=sub_ary[j]
+		Sectors_Mask=or(Sectors_Mask,Sectors_Pow)
 		Sectors_Pow*=2
 	}
 }
@@ -48,6 +49,7 @@ function enum(bit,		tmp,j) {
 
 BEGIN {
 	Sectors_Pow = 1
+	Sectors_Mask = 0
 }
 
 PASS==1 && $1 ~ /^#.*/ { next } # allow comments starting with #
@@ -71,10 +73,15 @@ END {
 	# need to wait to validate all values of Grp
 	for(g in Grp)
 		GrpId[Grp[g]]=g
+	Sectors_In_Use=0
 	for(p in PosId) {
+		Sectors_In_Use=or(Sectors_In_Use,PosId[p])
 		if (PosId[p] in GrpId)
 			print p, GrpId[PosId[p]]
 		else
 			print p, enum(PosId[p])
 	}
+	# checking if all sectors in use
+	if (Sectors_Mask != Sectors_In_Use)
+		print "NOT_FOUND:", enum(and(compl(Sectors_In_Use),Sectors_Mask)) > "/dev/stderr"
 }
