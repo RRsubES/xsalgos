@@ -9,7 +9,7 @@ function usage {
 	fi
 cat << EOF > "/dev/stderr"
 Syntax: $(basename $0) DATE_YYYYMMDD TIME_HHMM < XSALGOS_FILE
-For any new group, amend list.rgrp file.
+For any new group, amend list.rgrp file. No pipe allowed, only redirected file.
 
 e.g.: $(basename $0) 20160504 1905 < xslgs.04-05
 
@@ -80,9 +80,9 @@ function display(d,h,l) {
 	# delete extra spaces
 	gsub(/ +/, \" \", l)
 	gsub(/^ +/,\"\", l)
-	if (length(d) == 0)
+	if (!length(d))
 		print l, \" : date not found, left out\" > \"/dev/stderr\"
-	if (length(l) > 0 && length(h) > 0)
+	if (length(l) > 0 && length(h) > 0) 
 		print d, h, l
 }
 
@@ -137,13 +137,19 @@ function is_after(d,h) {
 
 # military sectors already left out...
 /^${DATE_REGEX} ${TIME_REGEX} ${POSI_REGEX} = ${CLIST_REGEX}\$/ {
-	if (is_after(\$1,\$2) > 0)
+	DATE=\$1
+	DAY=\$2
+	if (is_after(DATE,DAY) > 0)
 		exit 0
 	for(i = 5; i <= NF; i++)
 		db[\$i]=\$3
 }
 
 END {
+	if (!is_after(DATE,DAY)) {
+		printf(\"${DATE} not found, exiting\\n\") > \"/dev/stderr\"
+		exit 1
+	}
 	layer=\"NDSHIU\"
 	sect=\"I NGA JVKW MQZX\"
 	for(s in db) {
