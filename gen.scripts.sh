@@ -8,10 +8,13 @@ function usage {
 		echo -e "${RED}[E]${NORMAL}: $1" > "/dev/stderr"
 	fi
 cat << EOF > "/dev/stderr"
-Syntax: $(basename $0) TIME_HHMM < XSALGOS_FILE
+Syntax: $(basename $0) DATE_YYYYMMDD TIME_HHMM < XSALGOS_FILE
 For any new group, amend list.rgrp file.
 
-e.g.: $(basename $0) 1905 < xslgs.04-05
+e.g.: $(basename $0) 20160504 1905 < xslgs.04-05
+
+e.g.: cat xslgs.01-05 xslgs.02-05 xslgs.03-05 > xslgs 
+      $(basename $0) 20160503 0005 < xslgs
 EOF
 	exit 1
 }
@@ -20,6 +23,17 @@ EOF
 [ ! -w ./ ] && usage "unable to write in the current directory"
 
 TIME_REGEX="([01][0-9]|20|21|22|23)[0-5][0-9]"
+
+DAY_IN_REGEX="( [1-9]|[12][0-9]|3[01])"
+MONTH_IN_REGEX="( [1-9]|1[012])"
+YEAR_IN_REGEX="([0-9]{4})"
+DATE_IN_REGEX="(${DAY_IN_REGEX}\/${MONTH_IN_REGEX}\/${YEAR_IN_REGEX})"
+
+DAY_REGEX="${DAY_IN_REGEX// /0}"
+MONTH_REGEX="${MONTH_IN_REGEX// /0}"
+YEAR_REGEX="${YEAR_IN_REGEX}"
+DATE_REGEX="(${YEAR_REGEX}${MONTH_REGEX}${DAY_REGEX})"
+
 POSI_REGEX="P[NESF][0-9]"
 
 CSECT_REGEX="([MQZXNGA][SIU]|[JVKW][SU]|JH|I[ND])" # civil sector
@@ -33,13 +47,14 @@ DEFCF_REGEX="${POSI_REGEX} += (FERMEE|${GLIST_REGEX})"
 
 #-v TIME: checks if TIME variable has been set
 #FIXME: bc stuff because 0500 can be evaluated otherwise as octal, in awk as well...
+[[ $1 =~ ^${DATE_REGEX}$ ]] && { DATE="$1"; shift; }
 [[ $1 =~ ^${TIME_REGEX}$ ]] && { TIME="$1"; shift; }
 # -t 0: check if stdin is connected to a terminal
 # -p 0: check if stdin is connected via a pipe
 # if both fail, it means it was redirected via a "< FILE"
 #echo "pipe? $([[ -p 0 ]]; echo $?)"
 #echo "terminal? $([[ -t 0 ]]; echo $?)"
-[[ -v TIME ]] && [[ -p 0 || -t 0 ]] && [[ -f "$1" ]] && { exec < "$1"; shift; }
+[[ -v DATE ]] && [[ -v TIME ]] && [[ -p 0 || -t 0 ]] && [[ -f "$1" ]] && { exec < "$1"; shift; }
 
 while (($# > 0)); do
 	case "$1" in
@@ -54,22 +69,35 @@ while (($# > 0)); do
 done
 
 #echo "TIME? $([[ -v TIME ]]; echo $?)"
+[[ ! -v DATE ]] && usage "DATE_YYYYMMDD not defined"
 [[ ! -v TIME ]] && usage "TIME_HHMM not defined"
 [[ -p 0 || -t 0 ]] && usage "No valid detected data to process"
 
 echo "#!/usr/bin/awk -f
-function display(h,l) {
+function display(d,h,l) {
 	# delete military sectors
 	gsub(/${MSECT_REGEX}/, \"\", l)
 	# delete extra spaces
 	gsub(/ +/, \" \", l)
 	gsub(/^ +/,\"\", l)
-	if (length(l) > 0)
-		print h, l
+	if (length(d) == 0)
+		print l, \" : date not found, left out\" > \"/dev/stderr\"
+	if (length(l) > 0 && length(h) > 0)
+		print d, h, l
+}
+
+/^\*\*\* JOURNEE DU ${DATE_IN_REGEX} CALCULATEUR [0-9] \*\*\*/ {
+	DAY=substr(\$0,16,2)
+	MONTH=substr(\$0,19,2)
+	YEAR=substr(\$0,22,4)
+	gsub(/ /, \"0\", DAY)
+	gsub(/ /, \"0\", MONTH)
+	gsub(/ /, \"0\", YEAR)
+	DATE=YEAR \"\" MONTH \"\" DAY
 }
 
 /^0\*\*\* ${TIME_REGEX} STPV-Loc OPP ${DEFCF_REGEX}\$/ {
-	display(HOUR,LINE)
+	display(DATE,HOUR,LINE)
 	HOUR=\$2
 	LINE=\"\"
 	if (\$7 == \"FERMEE\")
@@ -83,7 +111,7 @@ function display(h,l) {
 }
 
 /^ +${DEFCF_REGEX}\$/ {
-	display(HOUR,LINE)
+	display(DATE,HOUR,LINE)
 	LINE=\"\"
 	if (\$3 == \"FERMEE\")
 		next
@@ -91,18 +119,28 @@ function display(h,l) {
 }
 
 END {
-	display(HOUR,LINE)
+	display(DATE,HOUR,LINE)
 }" > filter.$$.awk
 chmod +x filter.$$.awk
 
 echo "#!/usr/bin/awk -f
 
+function is_after(d,h) {
+	if (d > $(echo ${DATE} | bc))
+		return 1
+	if (d < $(echo ${DATE} | bc))
+		return 0
+	if (h > $(echo ${TIME} | bc))
+		return 1
+	return 0
+}
+
 # military sectors already left out...
-/^${TIME_REGEX} ${POSI_REGEX} = ${CLIST_REGEX}\$/ {
-	if (\$1 > $(echo ${TIME} | bc))
+/^${DATE_REGEX} ${TIME_REGEX} ${POSI_REGEX} = ${CLIST_REGEX}\$/ {
+	if (is_after(\$1,\$2) > 0)
 		exit 0
-	for(i = 4; i <= NF; i++)
-		db[\$i]=\$2
+	for(i = 5; i <= NF; i++)
+		db[\$i]=\$3
 }
 
 END {
