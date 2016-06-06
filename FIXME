@@ -1,0 +1,9 @@
+ajouter la possibilité de piper les fichiers en entree (pour y faire appel depuis le disque K:)
+directement du reseau... un gros cat xslgs_* ... => conf ok mais plus long... ou le limiter
+à deux jours avant et deux jours après...
+créer un utilitaire à qui on donne date et heure, il récupère les fichiers et pipe le contenu
+à gen.script.sh, sous la forme de:
+get.conf 20160503 1120 ...
+pb: comment regler et determiner les moments où changement de conf?
+rep: on l'a suite au premier utilitaire suffit de changer la fin du pipe...
+

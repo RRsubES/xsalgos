@@ -22,7 +22,7 @@ EOF
 [ $# -eq 0 ] && usage "no parameter detected"
 [ ! -w ./ ] && usage "unable to write in the current directory"
 
-TIME_REGEX="([01][0-9]|20|21|22|23)[0-5][0-9]"
+TIME_REGEX="([01][0-9]|2[0-3])[0-5][0-9]"
 
 DAY_IN_REGEX="( [1-9]|[12][0-9]|3[01])"
 MONTH_IN_REGEX="( [1-9]|1[012])"
@@ -71,7 +71,7 @@ done
 #echo "TIME? $([[ -v TIME ]]; echo $?)"
 [[ ! -v DATE ]] && usage "DATE_YYYYMMDD not defined"
 [[ ! -v TIME ]] && usage "TIME_HHMM not defined"
-[[ -p 0 || -t 0 ]] && usage "No valid detected data to process"
+#[[ -p 0 || -t 0 ]] && usage "No valid detected data to process"
 
 echo "#!/usr/bin/awk -f
 function display(d,h,l) {
@@ -125,12 +125,12 @@ chmod +x filter.$$.awk
 
 echo "#!/usr/bin/awk -f
 
-function is_after(d,h) {
+function is_before(d,h) {
 	if (d > $(echo ${DATE} | bc))
-		return 1
-	if (d < $(echo ${DATE} | bc))
 		return 0
-	if (h > $(echo ${TIME} | bc))
+	if (d < $(echo ${DATE} | bc))
+		return 1
+	if (h <= $(echo ${TIME} | bc))
 		return 1
 	return 0
 }
@@ -138,15 +138,16 @@ function is_after(d,h) {
 # military sectors already left out...
 /^${DATE_REGEX} ${TIME_REGEX} ${POSI_REGEX} = ${CLIST_REGEX}\$/ {
 	DATE=\$1
-	DAY=\$2
-	if (is_after(DATE,DAY) > 0)
+	HOUR=\$2
+	if (is_before(DATE,HOUR)) {
+		for(i = 5; i <= NF; i++)
+			db[\$i]=\$3
+	} else
 		exit 0
-	for(i = 5; i <= NF; i++)
-		db[\$i]=\$3
 }
 
 END {
-	if (!is_after(DATE,DAY)) {
+	if (is_before(DATE,HOUR)) {
 		printf(\"${DATE} not found, exiting\\n\") > \"/dev/stderr\"
 		exit 1
 	}
