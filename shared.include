@@ -1,0 +1,33 @@
+# not a regex, but common anyway
+declare -r RED=$(tput setaf 1)
+declare -r NORMAL=$(tput sgr0)
+
+declare -r FIND_DIR="./_XSALGOS/"
+
+declare -r TIME_REGEX="([01][0-9]|2[0-3])[0-5][0-9]"
+
+declare -r DAY_BLANK_REGEX="( [1-9]|[12][0-9]|3[01])"
+declare -r MONTH_BLANK_REGEX="( [1-9]|1[012])"
+declare -r YEAR_BLANK_REGEX="(20[0-9]{2})"
+declare -r DATE_BLANK_REGEX="(${DAY_BLANK_REGEX}\/${MONTH_BLANK_REGEX}\/${YEAR_BLANK_REGEX})"
+
+declare -r YEAR_REGEX="${YEAR_BLANK_REGEX}"
+declare -r MONTH_REGEX="${MONTH_BLANK_REGEX// /0}"
+declare -r DAY_REGEX="${DAY_BLANK_REGEX// /0}"
+declare -r DATE_REGEX="(${YEAR_REGEX}${MONTH_REGEX}${DAY_REGEX})"
+
+declare -r HEADER_REGEX="\*\*\* JOURNEE DU ${DATE_BLANK_REGEX} CALCULATEUR [0-9] \*\*\*"
+
+function msg {
+	# $1 is info, err, msg...
+	# $2 is the message
+	echo -e "[${RED}$1${NORMAL}] $2" > /dev/stderr
+}
+
+function info {
+	msg "info" "$1"
+}
+
+function err {
+	msg "error" "$1"
+}

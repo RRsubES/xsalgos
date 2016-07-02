@@ -1,14 +1,14 @@
 #!/bin/bash
 
-declare -r RED=$(tput setaf 1)
-declare -r NORMAL=$(tput sgr0)
+[[ -e ./shared.include ]] && source ./shared.include || { echo "error: shared.include not found" > /dev/stderr; exit 1; }
 
-FIND_DIR="./_XSALGOS/"
+#NO BLANK ALLOWED IN FILENAMES
 OPTION_BEFORE=1
+declare -r BEFORE_REGEX="([0-9]+)"
 
 function usage {
 	if ! [ -z "$1" ]; then
-		echo -e "${RED}[E]${NORMAL}: $1" > "/dev/stderr"
+		err "$1"
 	fi
 cat << EOF > "/dev/stderr"
 Syntax: $(basename $0) [-b|--before n] DATE_YYYYMMDD 
@@ -22,11 +22,10 @@ EOF
 	exit 1
 }
 
-BEFORE_REGEX="([0-9]+)"
-YEAR_REGEX="(20[0-9]{2})"
-MONTH_REGEX="(0[1-9]|1[012])"
-DAY_REGEX="([012][0-9]|3[01])"
-DATE_REGEX="(${YEAR_REGEX}${MONTH_REGEX}${DAY_REGEX})"
+function check_header {
+	grep -E "^${HEADER_REGEX}$" "$1" > /dev/null
+	return $?
+}
 
 while (($# > 0)); do
 	case "$1" in
@@ -48,10 +47,7 @@ while (($# > 0)); do
 	shift
 done
 
-YEAR=${DATE:0:4}
-[[ ! ${YEAR} =~ ^${YEAR_REGEX}$ ]] && usage "${YEAR} is not detected as being a valid year pattern"
 [[ ! ${OPTION_BEFORE} =~ ^${BEFORE_REGEX}$ ]] && usage "${OPTION_BEFORE} is not detected as valid, supposed to be a number"
-
 
 files=() #no spaces/blanks allowed
 for f in $(find "${FIND_DIR}" -mindepth 2 -type f | grep -E "[xX][sS][lL][gG][sS]_[0-9]{2}\.[0-9]{2}(\.[tT][xX][tT])?$" | grep -v -E "([xX][sS][cC][dD][sS]2|STATUCE)" | awk "{ year=month=\"\"; n=split(\$0,a,\"/\"); for(i=1; i <= n; i++) { if (a[i] ~ /^${YEAR_REGEX}\$/) year=a[i]; if (a[i] ~ /^${MONTH_REGEX}_?.+\$/) month=substr(a[i],0,2); }  printf(\"%s%s%s %s\n\", year, month, substr(a[n],7,2), \$0); }" | sort | uniq -w 8 | grep -B ${OPTION_BEFORE} -E "^${DATE}" | cut -d ' ' -f2-); do
@@ -59,12 +55,24 @@ for f in $(find "${FIND_DIR}" -mindepth 2 -type f | grep -E "[xX][sS][lL][gG][sS
 	echo "${f#${FIND_DIR}}" > /dev/stderr
 done
 
+if [ ${#files[@]} -eq 0 ]; then
+	info "No file found with ${DATE}"
+	exit 0
+fi
 read -p "Proceeding with those files ? [Y] " choice > /dev/stderr
 if [[ $choice =~ ^[nN] ]]; then
 	exit 0
 else
-	for i in $(seq 1 ${#files[@]}); do
-		echo "${files[$((i - 1))]}"
+	for f in ${files[@]}; do
+		check_header "$f"
+		if [ $? -ne 0 ]; then
+			err "$f No valid header found, lack of:\n${HEADER_REGEX//\\/}"
+			exit 1
+		fi
+		list="${list} $f"
 	done
+	#cat "${list:1}"
+	#echo "${files[@]}"
+	cat "${files[@]}"
 fi
 

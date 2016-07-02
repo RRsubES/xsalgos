@@ -1,11 +1,10 @@
 #!/bin/bash
 
-declare -r RED=$(tput setaf 1)
-declare -r NORMAL=$(tput sgr0)
+[[ -e ./shared.include ]] && source ./shared.include || { echo "error: shared.include not found" > /dev/stderr; exit 1; }
 
 function usage {
 	if ! [ -z "$1" ]; then
-		echo -e "${RED}[E]${NORMAL}: $1" > "/dev/stderr"
+		err "$1"
 	fi
 cat << EOF > "/dev/stderr"
 Syntax: $(basename $0) DATE TIME [-q|--quiet] [-f|--keep-filter] < XSALGOS_FILE
@@ -41,30 +40,16 @@ function echo_if {
 [ $# -eq 0 ] && usage "no parameter detected"
 [ ! -w ./ ] && usage "unable to write in the current directory"
 
-TIME_REGEX="([01][0-9]|2[0-3])[0-5][0-9]"
+declare -r POSI_REGEX="P[NESF][0-9]"
 
-# stdin date pattern, may contain blanks
-DAY_IN_REGEX="( [1-9]|[12][0-9]|3[01])"
-MONTH_IN_REGEX="( [1-9]|1[012])"
-YEAR_IN_REGEX="(20[0-9]{2})"
-DATE_IN_REGEX="(${DAY_IN_REGEX}\/${MONTH_IN_REGEX}\/${YEAR_IN_REGEX})"
+declare -r CSECT_REGEX="([MQZXNGA][SIU]|[JVKW][SU]|JH|I[ND])" # civil sector
+declare -r MSECT_REGEX="R${CSECT_REGEX}" # military sector
+declare -r GSECT_REGEX="R?${CSECT_REGEX}" # generic sector
 
-# in generated awk scripts, no blanks, only figures
-DAY_REGEX="${DAY_IN_REGEX// /0}"
-MONTH_REGEX="${MONTH_IN_REGEX// /0}"
-YEAR_REGEX="${YEAR_IN_REGEX}"
-DATE_REGEX="(${YEAR_REGEX}${MONTH_REGEX}${DAY_REGEX})"
+declare -r CLIST_REGEX="(${CSECT_REGEX} +)+"
+declare -r GLIST_REGEX="(${GSECT_REGEX} +)+"
 
-POSI_REGEX="P[NESF][0-9]"
-
-CSECT_REGEX="([MQZXNGA][SIU]|[JVKW][SU]|JH|I[ND])" # civil sector
-MSECT_REGEX="R${CSECT_REGEX}" # military sector
-GSECT_REGEX="R?${CSECT_REGEX}" # generic sector
-
-CLIST_REGEX="(${CSECT_REGEX} +)+"
-GLIST_REGEX="(${GSECT_REGEX} +)+"
-
-DEFCF_REGEX="${POSI_REGEX} += (FERMEE|${GLIST_REGEX})"
+declare -r DEFCF_REGEX="${POSI_REGEX} += (FERMEE|${GLIST_REGEX})"
 
 OPTION_QUIET=0
 OPTION_ERASE_FILTER=1
@@ -127,7 +112,7 @@ function display(d,h,p,l,		ary,i) {
 		print d\".\"h, p, \"=\", l
 }
 
-/^\*\*\* JOURNEE DU ${DATE_IN_REGEX} CALCULATEUR [0-9] \*\*\*$/ {
+/^${HEADER_REGEX}$/ {
 	# expression may be found more than once (multiple concatenated
 	# files), * special case *
 	if (length(DATE) > 0) {
@@ -227,6 +212,8 @@ END {
 }" > sort.$$.awk
 chmod +x sort.$$.awk
 
+# End of Text char
+# ETX_CHAR="\x03"
 if [ -e list.rgrp ]; then
 	sed -E "s/\x03//" | ./filter.$$.awk "$@" | ./read.along.$$.awk | awk -f expand.and.rename.awk "PASS=1" list.rgrp "PASS=2" /dev/stdin | sort
 else
