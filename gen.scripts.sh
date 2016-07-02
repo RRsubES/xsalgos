@@ -212,8 +212,6 @@ END {
 }" > sort.$$.awk
 chmod +x sort.$$.awk
 
-# End of Text char
-# ETX_CHAR="\x03"
 if [ -e list.rgrp ]; then
 	sed -E "s/${ETX_CHAR}//" |  ./filter.$$.awk "$@" | ./read.along.$$.awk | awk -f expand.and.rename.awk "PASS=1" list.rgrp "PASS=2" /dev/stdin | sort
 else

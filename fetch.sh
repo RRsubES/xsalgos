@@ -63,14 +63,18 @@ read -p "Proceeding with those files ? [Y] " choice > /dev/stderr
 if [[ $choice =~ ^[nN] ]]; then
 	exit 0
 else
+	headers_missing=0
 	for f in ${files[@]}; do
 		check_header "$f"
-		if [ $? -ne 0 ]; then
-			err "$f No valid header found, lack of:\n${HEADER_REGEX//\\/}"
-			exit 1
-		fi
+		[ $? -ne 0 ] && { headers_missing=$(($headers_missing + 1)); err ">> $f"; }
 		list="${list} $f"
 	done
-	cat "${files[@]}" | sed -E "s/${ETX_CHAR}//" 
+	if [ ${headers_missing} -gt 0 ]; then
+		err "${headers_missing} invalid header(s) found, lack of:"
+		err "${HEADER_REGEX//\\/}"
+		err "Fix them first."
+		exit 1
+	fi
+	cat "${files[@]}" | sed -E "s/${ETX_CHAR}//"
 fi
 
