@@ -215,10 +215,10 @@ chmod +x sort.$$.awk
 # End of Text char
 # ETX_CHAR="\x03"
 if [ -e list.rgrp ]; then
-	sed -E "s/\x03//" | ./filter.$$.awk "$@" | ./read.along.$$.awk | awk -f expand.and.rename.awk "PASS=1" list.rgrp "PASS=2" /dev/stdin | sort
+	sed -E "s/${ETX_CHAR}//" |  ./filter.$$.awk "$@" | ./read.along.$$.awk | awk -f expand.and.rename.awk "PASS=1" list.rgrp "PASS=2" /dev/stdin | sort
 else
 	echo_if "${RED}[E]${NORMAL} list.rgrp not found, unable to shorten expressions"
-	sed -E "s/\x03//" | ./filter.$$.awk "$@" | ./read.along.$$.awk | ./sort.$$.awk
+	sed -E "s/${ETX_CHAR}//" | ./filter.$$.awk "$@" | ./read.along.$$.awk | ./sort.$$.awk
 fi
 
 [[ ${OPTION_ERASE_FILTER} -ne 0 ]] && rm -f filter.$$.awk 2>/dev/null || echo_if "${RED}Script filename:${NORMAL} filter.$$.awk"
