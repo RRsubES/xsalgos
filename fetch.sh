@@ -71,8 +71,6 @@ else
 		fi
 		list="${list} $f"
 	done
-	#cat "${list:1}"
-	#echo "${files[@]}"
-	cat "${files[@]}"
+	cat "${files[@]}" | sed -E "s/${ETX_CHAR}//" 
 fi
 

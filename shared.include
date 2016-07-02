@@ -1,6 +1,8 @@
 # not a regex, but common anyway
 declare -r RED=$(tput setaf 1)
 declare -r NORMAL=$(tput sgr0)
+# End of Text char
+declare -r ETX_CHAR="\x03"
 
 declare -r FIND_DIR="./_XSALGOS/"
 
