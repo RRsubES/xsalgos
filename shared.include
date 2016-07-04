@@ -38,3 +38,8 @@ function check_header {
 	grep -E "^${HEADER_REGEX}$" "$1" > /dev/null
 	return $?
 }
+
+#function check_tail {
+#	tail -c 1 "$1" | hexdump -e '/1 "%02X"' | grep "03" > /dev/null
+#	return $?
+#}

@@ -61,7 +61,7 @@ else
 	headers_missing=0
 	for f in ${files[@]}; do
 		check_header "$f"
-		[ $? -ne 0 ] && { headers_missing=$(($headers_missing + 1)); err ">> $f"; }
+		[ $? -ne 0 ] && { (( headers_missing++ )); err ">> $f"; }
 		list="${list} $f"
 	done
 	if [ ${headers_missing} -gt 0 ]; then
@@ -70,6 +70,11 @@ else
 		err "Fix them first."
 		exit 1
 	fi
-	cat "${files[@]}" | sed -E "s/${ETX_CHAR}//"
+	# problem if prev file does not end up with LF
+	# need to add it with echo
+	#cat "${files[@]}" | sed -E "s/${ETX_CHAR}//"
+	for f in ${files[@]}; do
+		cat "$f"; echo ""
+	done | sed -E "s/${ETX_CHAR}//"
 fi
 
