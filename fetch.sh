@@ -22,11 +22,6 @@ EOF
 	exit 1
 }
 
-function check_header {
-	grep -E "^${HEADER_REGEX}$" "$1" > /dev/null
-	return $?
-}
-
 while (($# > 0)); do
 	case "$1" in
 	-b|--before)

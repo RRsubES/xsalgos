@@ -14,11 +14,6 @@ EOF
 	exit 1
 }
 
-function check_header {
-	grep -E "^${HEADER_REGEX}$" "$1" > /dev/null
-	return $?
-}
-
 function fix_header {
 	# $1 : date
 	# $2 : filename
@@ -26,7 +21,7 @@ function fix_header {
 	local year=${1:0:4}
 	local month=${1:4:2}
 	local day=${1:6:2}
-	echo "FIX *** JOURNEE DU ${day/#0/ }/${month/#0/ }/${year} CALCULATEUR 1 ***" > "$2.$$"
+	echo "*** JOURNEE DU ${day/#0/ }/${month/#0/ }/${year} CALCULATEUR 1 *** FIX" > "$2.$$"
 	#cat "$2" | sed -E "s/${ETX_CHAR}//" >> "$2.$$"
 	cat "$2" >> "$2.$$"
 	mv "$2.$$" "$2"

@@ -18,7 +18,7 @@ declare -r MONTH_REGEX="${MONTH_BLANK_REGEX// /0}"
 declare -r DAY_REGEX="${DAY_BLANK_REGEX// /0}"
 declare -r DATE_REGEX="(${YEAR_REGEX}${MONTH_REGEX}${DAY_REGEX})"
 
-declare -r HEADER_REGEX="(FIX )?\*\*\* JOURNEE DU ${DATE_BLANK_REGEX} CALCULATEUR [0-9] \*\*\*"
+declare -r HEADER_REGEX="\*\*\* JOURNEE DU ${DATE_BLANK_REGEX} CALCULATEUR [0-9] \*\*\*( FIX)?"
 
 function msg {
 	# $1 is info, err, msg...
@@ -32,4 +32,9 @@ function info {
 
 function err {
 	msg "error" "$1"
+}
+
+function check_header {
+	grep -E "^${HEADER_REGEX}$" "$1" > /dev/null
+	return $?
 }
