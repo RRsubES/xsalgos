@@ -21,7 +21,7 @@ function fix_header {
 	local year=${1:0:4}
 	local month=${1:4:2}
 	local day=${1:6:2}
-	echo "*** JOURNEE DU ${day/#0/ }/${month/#0/ }/${year} CALCULATEUR 1 *** FIX" > "$2.$$"
+	#echo "*** JOURNEE DU ${day/#0/ }/${month/#0/ }/${year} CALCULATEUR 1 *** FIX" > "$2.$$"
 	#cat "$2" >> "$2.$$"
 	#mv "$2.$$" "$2"
 }
@@ -40,7 +40,7 @@ done
 
 
 #no spaces/blanks allowed
-find "${FIND_DIR}" -mindepth 2 -type f | grep -E "[xX][sS][lL][gG][sS]_[0-9]{2}\.[0-9]{2}(\.[tT][xX][tT])?$" | grep -v -E "([xX][sS][cC][dD][sS]2|STATUCE)" | awk "{ year=month=\"\"; n=split(\$0,a,\"/\"); for(i=1; i <= n; i++) { if (a[i] ~ /^${YEAR_REGEX}\$/) year=a[i]; if (a[i] ~ /^${MONTH_REGEX}_?.+\$/) month=substr(a[i],0,2); }  printf(\"%s%s%s %s\n\", year, month, substr(a[n],7,2), \$0); }" | sort | while read DATE FILE; do
+xsalgos_files | while read DATE FILE; do
 	check_header "${FILE}"
 	[[ $? -ne 0 ]] && fix_header "$DATE" "$FILE"
 done

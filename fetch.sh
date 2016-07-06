@@ -50,7 +50,7 @@ done
 [[ ! ${OPTION_BEFORE} =~ ^${BEFORE_REGEX}$ ]] && usage "${OPTION_BEFORE} is not detected as valid, supposed to be a number"
 
 files=() #no spaces/blanks allowed
-for f in $(find "${FIND_DIR}" -mindepth 2 -type f | grep -E "[xX][sS][lL][gG][sS]_[0-9]{2}\.[0-9]{2}(\.[tT][xX][tT])?$" | grep -v -E "([xX][sS][cC][dD][sS]2|STATUCE)" | awk "{ year=month=\"\"; n=split(\$0,a,\"/\"); for(i=1; i <= n; i++) { if (a[i] ~ /^${YEAR_REGEX}\$/) year=a[i]; if (a[i] ~ /^${MONTH_REGEX}_?.+\$/) month=substr(a[i],0,2); }  printf(\"%s%s%s %s\n\", year, month, substr(a[n],7,2), \$0); }" | sort | uniq -w 8 | grep -B ${OPTION_BEFORE} -E "^${DATE}" | cut -d ' ' -f2-); do
+for f in $(xsalgos_files | uniq -w 8 | grep -B ${OPTION_BEFORE} -E "^${DATE}" | cut -d ' ' -f2-); do
 	files+=( "$f" )
 	echo "${f#${FIND_DIR}}" > /dev/stderr
 done
