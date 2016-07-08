@@ -40,11 +40,13 @@ function check_header {
 }
 
 function gen_header {
+	# given date YYYYMMDD
+	# FIX: date not checked
 	awk '{ year=substr($1,1,4); month=substr($1,5,2); day=substr($1,7,2); gsub(/^0/, " ", month); gsub(/^0/, " ", day); printf("*** JOURNEE DU %s/%s/%s CALCULATEUR 1 *** FIX\n", day, month, year); }'
 }
 
 function date_from_path {
-	# FIX: check if month and year filled
+	# FIX: check if month and year filled up
 	awk "{ year=month=\"\"; n=split(\$0,a,\"/\"); for(i=1; i <= n; i++) { if (a[i] ~ /^${YEAR_REGEX}\$/) year=a[i]; if (a[i] ~ /^${MONTH_REGEX}_?.+\$/) month=substr(a[i],0,2); }  printf(\"%s%s%s %s\n\", year, month, substr(a[n],7,2), \$0); }"
 }
 
