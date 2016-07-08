@@ -17,13 +17,18 @@ EOF
 function fix_header {
 	# $1 : date
 	# $2 : filename
+	declare -r FAKE=0
 	info "Fixing header for $2"
 	local year=${1:0:4}
 	local month=${1:4:2}
 	local day=${1:6:2}
-	#echo "*** JOURNEE DU ${day/#0/ }/${month/#0/ }/${year} CALCULATEUR 1 *** FIX" > "$2.$$"
-	#cat "$2" >> "$2.$$"
-	#mv "$2.$$" "$2"
+	if [ $FAKE -eq 0 ]; then
+		info "Fake fix for test purpose; change FAKE variable"
+	else
+		echo "*** JOURNEE DU ${day/#0/ }/${month/#0/ }/${year} CALCULATEUR 1 *** FIX" > "$2.$$"
+		cat "$2" >> "$2.$$"
+		mv "$2.$$" "$2"
+	fi
 }
 
 while (($# > 0)); do
