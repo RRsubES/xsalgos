@@ -39,12 +39,21 @@ function check_header {
 	return $?
 }
 
+function gen_header {
+	awk '{ year=substr($1,1,4); month=substr($1,5,2); day=substr($1,7,2); gsub(/^0/, " ", month); gsub(/^0/, " ", day); printf("*** JOURNEE DU %s/%s/%s CALCULATEUR 1 *** FIX\n", day, month, year); }'
+}
+
+function date_from_path {
+	# FIX: check if month and year filled
+	awk "{ year=month=\"\"; n=split(\$0,a,\"/\"); for(i=1; i <= n; i++) { if (a[i] ~ /^${YEAR_REGEX}\$/) year=a[i]; if (a[i] ~ /^${MONTH_REGEX}_?.+\$/) month=substr(a[i],0,2); }  printf(\"%s%s%s %s\n\", year, month, substr(a[n],7,2), \$0); }"
+}
+
 function xsalgos_files {
 	# returns DATE_YYYYMMDD FILENAME
 	find "${FIND_DIR}" -mindepth 2 -type f |
 		grep -E "[xX][sS][lL][gG][sS]_[0-9]{2}\.[0-9]{2}(\.[tT][xX][tT])?$" |
 		grep -v -E "([xX][sS][cC][dD][sS]2|STATUCE|ZONES)" |
-		awk "{ year=month=\"\"; n=split(\$0,a,\"/\"); for(i=1; i <= n; i++) { if (a[i] ~ /^${YEAR_REGEX}\$/) year=a[i]; if (a[i] ~ /^${MONTH_REGEX}_?.+\$/) month=substr(a[i],0,2); }  printf(\"%s%s%s %s\n\", year, month, substr(a[n],7,2), \$0); }" |
+		date_from_path |
 		sort
 }
 

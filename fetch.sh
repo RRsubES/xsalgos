@@ -62,25 +62,18 @@ fi
 
 if [ ${OPTION_AUTO} -eq 1 ]; then
 	read -p "Proceeding with those files ? [Y] " choice > /dev/stderr
-	[ $choice =~ ^[nN] ] && exit 0
+	[[ $choice =~ ^[nN] ]] && exit 0
 fi
 
-headers_missing=0
-for f in ${files[@]}; do
-	check_header "$f"
-	[ $? -ne 0 ] && { (( headers_missing++ )); err ">> $f"; }
-	list="${list} $f"
-done
-if [ ${headers_missing} -gt 0 ]; then
-	err "${headers_missing} invalid header(s) found, lack of:"
-	err "${HEADER_REGEX//\\/}"
-	err "Fix them first."
-	exit 1
-fi
 # problem if prev file does not end up with LF
 # need to add it with echo
 #cat "${files[@]}" | sed -E "s/${ETX_CHAR}//"
 for f in ${files[@]}; do
-	cat "$f"; echo ""
+	check_header "$f"
+	# fixing header
+	[[ $? -ne 0 ]] && date_from_path <<< "$f" | gen_header
+	cat "$f"
+	# fixing tail
+	echo ""
 done | sed -E "s/${ETX_CHAR}//"
 
